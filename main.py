@@ -60,18 +60,18 @@ def dSigmoid(x):
 
 def dEuclideanLoss(YTrue, YPredict):
     if YTrue.ndim == 0 or YPredict.ndim == 0:
-        ans = YPredict - YTrue
+        ans = YTrue - YPredict
         if not (ans.ndim == 0 or np.prod(ans.shape) == 1):
             raise Exception("dimension error")
     elif YTrue.ndim == 1 and YPredict.ndim == 1:
-        ans = YPredict - YTrue
+        ans = YTrue - YPredict
     elif np.prod(YTrue.ndim) == np.prod(YPredict.ndim):
         if YPredict.ndim == 1:
-            ans = YPredict[np.newaxis, :] - YTrue.reshape(1,)
+            ans = YTrue.reshape(1,) - YPredict[np.newaxis, :]
         elif YTrue.ndim == 1:
-            ans = YPredict(1,) - YTrue.reshape[np.newaxis, :]
+            ans = YTrue.reshape[np.newaxis, :] - YPredict(1,)
         elif YPredict.shape == YTrue.shape:
-            ans = YPredict - YTrue
+            ans = YTrue - YPredict
         else:
             raise Exception("dimension error")
     else:
