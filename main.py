@@ -263,10 +263,68 @@ class Network:
 
 
 #######################################################################################
+# Define Evaluation Functions
+def getConfusionMatrix(YTrue, YPredict):
+    """
+    Computes the confusion matrix.
+    Parameters
+    ----------
+    YTrue : numpy array
+        This array contains the ground truth.
+    YPredict : numpy array
+        This array contains the predictions.
+    Returns
+    CM : numpy matrix
+        The confusion matrix.
+    """
+    pass
+
+
+def getPerformanceScores(YTrue, YPredict):
+    """
+    Computes the accuracy, precision, recall, f1 score.
+    Parameters
+    ----------
+    YTrue : numpy array
+        This array contains the ground truth.
+    YPredict : numpy array
+        This array contains the predictions.
+    Returns
+    {"CM" : numpy matrix,
+    "accuracy" : float,
+    "precision" : float,
+    "recall" : float,
+    "f1" : float}
+        This should be a dictionary.
+    """
+    pass
+
+
+#######################################################################################
+# !! this code is provided by the instructor
+def plotDecisionBoundary(model, X, Y):
+    """
+    Plot the decision boundary given by model.
+    Parameters
+    ----------
+    model : model, whose parameters are used to plot the decision boundary.
+    X : input data
+    Y : input labels
+    """
+    x1_array, x2_array = np.meshgrid(np.arange(-4, 4, 0.01), np.arange(-4, 4, 0.01))
+    grid_coordinates = np.c_[x1_array.ravel(), x2_array.ravel()]
+    Z = model.predict(grid_coordinates)
+    Z = Z.reshape(x1_array.shape)
+    plt.contourf(x1_array, x2_array, Z, cmap=plt.cm.bwr)
+    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.bwr)
+    plt.show()
+
+# continue writing your code in this block
+#######################################################################################
 # Test Model
 
 def main():
-    AllX, AllY = getDataset1(is_linear=True)
+    AllX, AllY = getDataset1(is_linear=False)
     XTrain, XTest, YTrain, YTest = next(make_cross_validation_data(AllX, AllY))
 
     # assemble your model
