@@ -48,30 +48,46 @@ def getDataset2():
 ################################################################################
 # Define Activation and Loss Functions
 
+
 def sigmoid(x):
+    """
+    Calculate the Sigmoid activation function.
+    :param x: Scalar, Array or Matrix
+    :return: result, of the same dimension of x.
+    """
     exp_x = np.exp(x)
     return exp_x / (exp_x + 1)
 
 
 def dSigmoid(x):
-    sigm_x = sigmoid(x)
-    return sigm_x * (1 - sigm_x)
+    # calc the result of derivative of sigmoid.
+    return x * (1 - x)
 
 
-def dEuclideanLoss(YTrue, YPredict):
+def no_activation(x):
+    # just no activation
+    return x
+
+
+def dno_activation(x):
+    # no activation, so return 1
+    return 1
+
+
+def dEuclideanLoss(YPredict, YTrue):
     if YTrue.ndim == 0 or YPredict.ndim == 0:
-        ans = YTrue - YPredict
+        ans = YPredict - YTrue
         if not (ans.ndim == 0 or np.prod(ans.shape) == 1):
             raise Exception("dimension error")
     elif YTrue.ndim == 1 and YPredict.ndim == 1:
-        ans = YTrue - YPredict
+        ans = YPredict - YTrue
     elif np.prod(YTrue.ndim) == np.prod(YPredict.ndim):
         if YPredict.ndim == 1:
-            ans = YTrue.reshape(1,) - YPredict[np.newaxis, :]
+            ans = YPredict.reshape(1,) - YTrue[np.newaxis, :]
         elif YTrue.ndim == 1:
-            ans = YTrue.reshape[np.newaxis, :] - YPredict(1,)
+            ans = YPredict.reshape[np.newaxis, :] - YTrue(1,)
         elif YPredict.shape == YTrue.shape:
-            ans = YTrue - YPredict
+            ans = YPredict - YTrue
         else:
             raise Exception("dimension error")
     else:
@@ -79,8 +95,8 @@ def dEuclideanLoss(YTrue, YPredict):
     return ans
 
 
-def euclideanLoss(YTrue, YPredict):
-    YDiff = dEuclideanLoss(YTrue, YPredict)
+def euclideanLoss(YPredict, YTrue):
+    YDiff = dEuclideanLoss(YPredict, YTrue)
     YDiffPwr = np.power(YDiff, 2)
     return 1 / 2 * np.sum(YDiffPwr, axis=0)
 
@@ -211,11 +227,10 @@ class Network:
         x  : array-like
             Note that this is just ONE single sample.
         """
-        working = x[np.newaxis, :]
+        working = np.atleast_1d(x)[np.newaxis, :]
         all_layers = [working]
         for i, (layer, act_func) in enumerate(zip(self.layers, self.activationList)):
-            z = np.dot(working, layer.weights) + layer.bias
-            working = act_func(z)
+            working = act_func(np.dot(working, layer.weights) + layer.bias)
             all_layers.append(working)
         return all_layers
 
@@ -227,18 +242,23 @@ class Network:
         None, but feel free to add anything you like.
         """
         yPred = all_layers[-1]
-        yPred = yPred
-        # exclude the last layer (y), then reverse it!
-        rev_hidden = all_layers[0:-1][::-1]
-
-        # First, compute the derivative of the loss and the output activation.
+        # First, compute the derivative of the loss and the output activation, as beta
         beta = self.dLoss(yPred, y)
+
+        rev_hidden = all_layers[::-1]
+        rev_dActLists = self.dActivationList[::-1]
         # Then, compute the gradient layer by layer in the reverse order.
-        for rev_i, layer in enumerate(self.layers[::-1]):
-            if layer.useBias:
+        for rev_i, layer_i in enumerate(self.layers[::-1]):
+            # dAct_layer_i is, the dActivation of the current layer_(i+1)
+            dAct_layer_i = rev_dActLists[rev_i](rev_hidden[rev_i])
+            beta = np.multiply(beta, dAct_layer_i)
+
+            if layer_i.useBias:
                 self.grad_bias[rev_i] += beta
-            self.gradients[rev_i] += np.dot(rev_hidden[rev_i].T, beta)
-            beta = np.dot(beta, layer.weights.T)
+
+            new_gradient = np.dot(rev_hidden[rev_i + 1].T, beta)
+            self.gradients[rev_i] += new_gradient
+            beta = np.dot(beta, layer_i.weights.T)
 
     def getLoss(self, X, Y, regLambda=0.0, regMethod="l2"):
         """
@@ -249,7 +269,7 @@ class Network:
             raise Exception("invalid reg method.")
         y_pred = self.predict(X)
         num_samples = X.shape[0]
-        _loss = self.loss(Y, y_pred) / num_samples
+        _loss = self.loss(y_pred, Y) / num_samples
         _reg = 0.0
         if regLambda != 0:
             if regMethod == "l1":
@@ -274,13 +294,24 @@ def getConfusionMatrix(YTrue, YPredict):
     YPredict : numpy array
         This array contains the predictions.
     Returns
-    CM : numpy matrix
+    CM, labels, label2id : numpy matrix, labels, labels2id
         The confusion matrix.
     """
-    pass
+    # first we fetch the data from
+    assert(YTrue.shape == YPredict.shape)
+    labels = sorted(set(YTrue) | set(YPredict))
+    label_2_id = dict()
+    for i, label in enumerate(labels):
+        label_2_id[label] = i
+    conf_mat = np.ones((len(labels), len(labels)), dtype=np.int64)
+    for yTrue, yPredict in zip(YTrue, YPredict):
+        t = label_2_id[yTrue]
+        p = label_2_id[yPredict]
+        conf_mat[t, p] += 1
+    return conf_mat, labels, label_2_id
 
 
-def getPerformanceScores(YTrue, YPredict):
+def getPerformanceScores(YTrue, YPredict, true_label=1):
     """
     Computes the accuracy, precision, recall, f1 score.
     Parameters
@@ -297,7 +328,24 @@ def getPerformanceScores(YTrue, YPredict):
     "f1" : float}
         This should be a dictionary.
     """
-    pass
+    conf_mat, _, label_2_id = getConfusionMatrix(YTrue, YPredict)
+    eye_sum = 0
+    for i in range(conf_mat.shape[0]):
+        eye_sum += conf_mat[i, i]
+    accuracy = eye_sum / np.sum(conf_mat)
+    if true_label not in label_2_id.keys():
+        raise Exception("unexpected label")
+    lt = label_2_id[true_label]
+    precision = conf_mat[lt, lt] / np.sum(conf_mat[:, lt])
+    recall = conf_mat[lt, lt] / np.sum(conf_mat[lt, :])
+    f1 = precision * recall / (precision + recall)
+    return {
+        "CM": conf_mat,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
 
 
 #######################################################################################
@@ -316,7 +364,7 @@ def plotDecisionBoundary(model, X, Y):
     Z = model.predict(grid_coordinates)
     Z = Z.reshape(x1_array.shape)
     plt.contourf(x1_array, x2_array, Z, cmap=plt.cm.bwr)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.bwr)
+    plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=plt.cm.bwr)
     plt.show()
 
 # continue writing your code in this block
@@ -324,7 +372,7 @@ def plotDecisionBoundary(model, X, Y):
 # Test Model
 
 def main():
-    AllX, AllY = getDataset1(is_linear=False)
+    AllX, AllY = getDataset1(is_linear=True)
     XTrain, XTest, YTrain, YTest = next(make_cross_validation_data(AllX, AllY))
 
     # assemble your model
@@ -332,8 +380,8 @@ def main():
     model = Network(layers, [sigmoid, sigmoid], [dSigmoid, dSigmoid], euclideanLoss, dEuclideanLoss)
 
     # specify training parameters
-    epochs = 200
-    learningRate = 1e-2
+    epochs = 2000
+    learningRate = 0.05
     regLambda = 0
 
     # capture the loss values during training
@@ -344,6 +392,9 @@ def main():
         model.fit(XTrain, YTrain, learningRate, regLambda)
         loss["train"][epoch] = model.getLoss(XTrain, YTrain, regLambda)
         loss["test"][epoch] = model.getLoss(XTest, YTest, regLambda)
+
+    print(YTest)
+    print(model.predict(XTest))
 
     # plot the losses, both curves should be decreasing
     plt.plot([i for i in range(epochs)], loss["train"], label="train")
