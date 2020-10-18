@@ -5,6 +5,13 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 
 class DataDepot:
     def __init__(self, filenames: list):
+        """
+        The DataDepot structure provides a way to integrate all related data sets.
+        All input data sets, such as `trainset`, `testset` and `evalset`, can be integrated together
+        and re-divided into new datasets using KFold or StratifiedKFold methods for multiple training.
+        :param filenames: A list of tuples. Each tuple should contain 3 values:
+               (<filename to X dataset>, <filename to Y dataset>, <label>)
+        """
         self.x_dim = None
         self.y_dim = None
         self.all_records_num = None
@@ -50,6 +57,14 @@ class DataDepot:
                 raise Exception("<{0}>, filename type not supported.".format(file_id))
 
     def get(self, label=None):
+        """
+        Get the dataset.
+        If no label is specified, will return all the data.
+        If label is an Integer, will return the sub-datasets of the index.
+        If label is a string, will return the sub-dataset with that label.
+        :param label: None, Int or Str
+        :return: A tuple of two `numpy.ndarray`, which are the data of X and Y respectively.
+        """
         if label is None:
             return self.full_data_x, self.full_data_y
         elif type(label) == int:

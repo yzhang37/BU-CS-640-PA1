@@ -29,7 +29,8 @@ class Network:
 
     def grad_zero(self):
         """
-        Make the gradients zero
+        Make the gradients zero.
+        If we want to make a new train, we must first call this.
         """
         self.gradients.clear()
         self.grad_bias.clear()

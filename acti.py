@@ -18,7 +18,8 @@ def dSigmoid(output, beta):
 
 
 def linearUnit(x):
-    # just no activation
+    # Unlike ReLU, LinearUnit really passes the previous data
+    # directly to the next layer without any activation.
     return np.atleast_2d(x)
 
 
@@ -28,6 +29,7 @@ def dLinearUnit(output, beta):
 
 
 def softmax(x):
+    # use the softmax as the activation function.
     x = np.atleast_2d(x)
     shift = x - np.max(x, axis=1, keepdims=True)
     exp_z = np.exp(shift)
