@@ -6,6 +6,7 @@ from layer import Layer
 from network import Network
 import acti
 import loss as lossFuncs
+from metrics import ConfusionMatrix
 
 
 def plotDecisionBoundary(model, X, Y):
@@ -59,8 +60,9 @@ def train_dat1():
         loss["test"][epoch] = model.getLoss(XTest, YTestOneHot, regLambda)
         if (epoch + 1) % 1000 == 0:
             print("epoch {0}: ltrain: {1:0.6f}, ltest: {2:0.6f}".format(epoch + 1, loss["train"][epoch], loss["test"][epoch]))
-    print(YTest.T)
-    print(model.predict(XTest).T)
+            pred_xtest = model.predict(XTest)
+            cm = ConfusionMatrix(YTest, pred_xtest, is_one_hot=False)
+            print(cm.output_metrics())
 
     plt.plot([i for i in range(epochs)], loss["train"], label="train")
     plt.plot([i for i in range(epochs)], loss["test"], label="test")
