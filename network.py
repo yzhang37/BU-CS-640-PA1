@@ -2,7 +2,7 @@ import numpy as np
 
 
 class Network:
-    def __init__(self, layers, activationList, dActivationList, loss, dLoss, is_one_hot=False):
+    def __init__(self, layers, activationList, dActivationList, loss, dLoss, predict_filter=None):
         """
         :param layers: List[Layers]
                This should be a list of Layers objects.
@@ -21,7 +21,7 @@ class Network:
         self.dActivationList = dActivationList
         self.loss = loss
         self.dLoss = dLoss
-        self.isOneHot = is_one_hot
+        self.predFilter = predict_filter
 
         self.gradients = []
         self.grad_bias = []
@@ -91,17 +91,13 @@ class Network:
         """
         y_output = []
         for x in X:
-            y = (self.forward(x)[-1]).flatten()
-            if y.shape[0] == 1:
-                y = y[0]
+            y = self.forward(x)[-1]
+            if self.predFilter is not None:
+                y = self.predFilter(y)
+            if np.sum(y.shape) == 1:
+                y = y.flatten()
             y_output.append(y)
         ans = np.array(y_output)
-        if self.isOneHot:
-            pred_argmax = np.argmax(ans, axis=1)
-            pred = np.zeros_like(ans)
-            for i, argmax in enumerate(pred_argmax):
-                pred[i, argmax] = 1
-            ans = pred
         return ans
 
     def forward(self, x):
@@ -149,7 +145,7 @@ class Network:
         """
         if regMethod not in ("l1", "l2"):
             raise Exception("invalid reg method.")
-        y_pred = self.predict(X)
+        y_pred = self.forward(X)[-1]
         num_samples = X.shape[0]
         _loss = self.loss(y_pred, Y) / num_samples
         _reg = 0.0

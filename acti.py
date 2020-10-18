@@ -7,6 +7,7 @@ def sigmoid(x):
     :param x: Scalar, Array or Matrix
     :return: result, of the same dimension of x.
     """
+    x = np.atleast_2d(x)
     return 1 / (1 + np.exp(-x))
 
 
@@ -16,23 +17,19 @@ def dSigmoid(output, beta):
     return np.multiply(beta, coef)
 
 
-def no_activation(x):
+def linearUnit(x):
     # just no activation
-    return x
+    return np.atleast_2d(x)
 
 
-def dno_activation(output, beta):
+def dLinearUnit(output, beta):
     # no activation, so return 1
     return beta
 
 
 def softmax(x):
+    x = np.atleast_2d(x)
     shift = x - np.max(x, axis=1, keepdims=True)
     exp_z = np.exp(shift)
     return exp_z / np.sum(exp_z, axis=1, keepdims=True)
 
-
-def dSoftmax(output, beta):
-    assert(beta.shape == output.shape)
-    coef = beta - output
-    return np.multiply(beta, coef)

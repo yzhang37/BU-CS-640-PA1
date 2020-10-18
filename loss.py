@@ -1,31 +1,17 @@
 import numpy as np
+import acti
 
 
 def dEuclideanLoss(YPredict, YTrue):
-    if YTrue.ndim == 0 or YPredict.ndim == 0:
-        ans = YPredict - YTrue
-        if not (ans.ndim == 0 or np.prod(ans.shape) == 1):
-            raise Exception("dimension error")
-    elif YTrue.ndim == 1 and YPredict.ndim == 1:
-        ans = YPredict - YTrue
-    elif np.prod(YTrue.ndim) == np.prod(YPredict.ndim):
-        if YPredict.ndim == 1:
-            ans = YPredict.reshape(1,) - YTrue[np.newaxis, :]
-        elif YTrue.ndim == 1:
-            ans = YPredict.reshape[np.newaxis, :] - YTrue(1,)
-        elif YPredict.shape == YTrue.shape:
-            ans = YPredict - YTrue
-        else:
-            raise Exception("dimension error")
-    else:
-        raise Exception("dimension error")
-    return ans
+    if YPredict.shape != YTrue.shape:
+        YTrue = YTrue.reshape(YPredict.shape)
+    return YPredict - YTrue
 
 
 def euclideanLoss(YPredict, YTrue):
     YDiff = dEuclideanLoss(YPredict, YTrue)
     YDiffPwr = np.power(YDiff, 2)
-    return 1 / 2 * np.sum(YDiffPwr, axis=0)
+    return 0.5 * np.sum(YDiffPwr, axis=0)
 
 
 def dSoftmaxLoss(YPredict, YTrueOneHot):
@@ -38,8 +24,18 @@ def dSoftmaxLoss(YPredict, YTrueOneHot):
     return delta
 
 
-def softmaxLoss(YPredict, YTrueOneHot):
-    YTrueOneHot = YTrueOneHot.reshape(YPredict.shape)
-    pred_argmax = np.argmax(YPredict, axis=1)
-    ytrue_argmax = np.argmax(YTrueOneHot, axis=1)
-    return np.sum(1 - np.equal(pred_argmax, ytrue_argmax).astype(np.int64))
+def crossEntropyLoss(YPredict, YTrue):
+    if YPredict.shape != YTrue.shape:
+        YTrue = YTrue.reshape(YPredict.shape)
+    return -np.sum(np.multiply(np.log(YPredict), YTrue))
+
+
+def dCrossEntropyLoss_dSoftmax(YPredict, YTrueOneHot):
+    if YPredict.shape != YTrueOneHot.shape:
+        YTrueOneHot = YTrueOneHot.reshape(YPredict.shape)
+    return np.multiply(YPredict, np.sum(YTrueOneHot, axis=1, keepdims=True)) - YTrueOneHot
+
+
+def crossEntropyPredict(YPredict):
+    YPredict = np.atleast_2d(YPredict)
+    return np.argmax(YPredict, axis=1)

@@ -92,7 +92,8 @@ def getD2():
 
 
 def make_one_hot(y):
-    num_classes = np.max(y) + 1
+    y = y.astype(np.int)
+    num_classes = np.int(np.max(y) + 1)
     num_samples = y.shape[0]
     one_hot_y = np.zeros((num_samples, num_classes))
     for i, y_i in enumerate(y):
